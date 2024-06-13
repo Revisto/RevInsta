@@ -1,0 +1,4 @@
+git+ssh://git@github.com/revisto/instagrapi
+python-telegram-bot
+pika
+redis

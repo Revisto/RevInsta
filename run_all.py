@@ -1,8 +1,6 @@
 import os
 import subprocess
 
-python_files = ["telegram_service/telegram_listener.py"]
-python_files = ["telegram_service/telegram_sender.py"]
 python_files = ["instagram_service/instagram_listener.py", "instagram_service/instagram_sender.py", "telegram_service/telegram_sender.py", "telegram_service/telegram_listener.py"]
 
 def run_all_main_files():

@@ -7,7 +7,6 @@ from message_broker.rabbitmq_service import RabbitMQService
 from config.config import Config
 
 redis_telegram_client = Redis(host=Config.REDIS_HOST, port=Config.REDIS_PORT, password=Config.REDIS_PASSWORD, db=1)
-rabbitmq_service = RabbitMQService(Config)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued."""
@@ -23,7 +22,9 @@ async def send_direct(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         if instagram_data is not None:
             instagram_data = json.loads(instagram_data)
             instagram_data["text"] = update.message.text
+            rabbitmq_service = RabbitMQService(Config)
             rabbitmq_service.send_message_telegram_to_instagram(json.dumps(instagram_data))
+            rabbitmq_service.close_connection()
             await update.message.set_reaction("👍")
             return
     

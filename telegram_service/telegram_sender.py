@@ -1,6 +1,7 @@
 from redis import Redis
 import json
 import requests
+import io
 
 from message_broker.rabbitmq_service import RabbitMQService
 from config.config import Config
@@ -29,24 +30,45 @@ class TelegramSender:
         data = {
             "parse_mode": "HTML",
             "chat_id": self.CHAT_ID,
-            "video": video_url,
             "caption": caption
         }
-        req = requests.post(url, data=data)
-        message_id = json.loads(req.text)["result"]["message_id"]
-        return message_id
+        video = requests.get(video_url)
+        video_stream = io.BytesIO(video.content)
+        video_stream.name = "video.mp4"
+        files = {
+            "video": video_stream
+        }
+        req = requests.post(url, data=data, files=files)
+        response = json.loads(req.text)
+        if req.status_code == 200:
+            message_id = response["result"]["message_id"]
+            return message_id
+        else:
+            print(f"Failed to send video message: {response['description']}")
+            return None
+
     
     def send_photo_message(self, photo_url, caption):
         url = f"https://api.telegram.org/bot{self.TELEGRAM_BOT_TOKEN}/sendPhoto"
         data = {
             "parse_mode": "HTML",
             "chat_id": self.CHAT_ID,
-            "photo": photo_url,
             "caption": caption
         }
-        req = requests.post(url, data=data)
-        message_id = json.loads(req.text)["result"]["message_id"]
-        return message_id
+        photo = requests.get(photo_url)
+        photo_stream = io.BytesIO(photo.content)
+        photo_stream.name = "photo.jpg"
+        files = {
+            "photo": photo_stream
+        }
+        req = requests.post(url, data=data, files=files)
+        response = json.loads(req.text)
+        if req.status_code == 200:
+            message_id = response["result"]["message_id"]
+            return message_id
+        else:
+            print(f"Failed to send photo message: {response['description']}")
+            return None
 
 telegram_sender = TelegramSender(Config)
 

@@ -28,7 +28,7 @@ class TelegramSender:
             chat_id = self.CHAT_ID
 
         url = f"https://api.telegram.org/bot{self.TELEGRAM_BOT_TOKEN}/sendMessage"
-        data = {"chat_id": self.CHAT_ID, "text": text}
+        data = {"chat_id": chat_id, "text": text}
         req = requests.post(url, data=data)
         if req.status_code == 200:
             message_id = json.loads(req.text)["result"]["message_id"]

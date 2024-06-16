@@ -1,8 +1,4 @@
 import pika
-import pika.exceptions
-from time import sleep
-
-from logger.log import Logger
 
 class RabbitMQService:
     def __init__(self, config):
@@ -43,26 +39,14 @@ class RabbitMQService:
                 self.channel.basic_consume(queue=value['queue'], on_message_callback=callbacks[key], auto_ack=True)
         self.channel.start_consuming()
 
-    def send_message(self, message, exchange, routing_key):
-        for i in range(3):
-            try:
-                self.channel.basic_publish(exchange=exchange, routing_key=routing_key, body=message)
-                break
-            except pika.exceptions.StreamLostError:
-                if i < 2:  # If this was not the last attempt, wait a bit before retrying
-                    sleep(5)  # Wait for 5 seconds
-                else:  # If this was the last attempt, re-raise the exception
-                    Logger("RabbitMQService").log_error("Failed to send message to RabbitMQ")
-                    raise pika.exceptions.StreamLostError("Failed to send message to RabbitMQ")
-
     def send_message_instagram_to_telegram(self, message):
-        self.send_message(message, self.exchanges_queues['instagram_to_telegram']['exchange'], 'instagram_to_telegram')
+        self.channel.basic_publish(exchange=self.exchanges_queues['instagram_to_telegram']['exchange'], routing_key='instagram_to_telegram', body=message)
 
     def send_message_telegram_to_instagram(self, message):
-        self.send_message(message, self.exchanges_queues['telegram_to_instagram']['exchange'], 'telegram_to_instagram')
+        self.channel.basic_publish(exchange=self.exchanges_queues['telegram_to_instagram']['exchange'], routing_key='telegram_to_instagram', body=message)
 
     def send_message_logs(self, message):
-        self.send_message(message, self.exchanges_queues['logs']['exchange'], 'logs')
+        self.channel.basic_publish(exchange=self.exchanges_queues['logs']['exchange'], routing_key='logs', body=message)
 
     def stop_consuming(self):
         self.channel.stop_consuming()

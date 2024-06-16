@@ -18,6 +18,7 @@ def handle_login_required(func):
             except LoginRequired:
                 self.logger.log_info("Session is invalid, need to login via username and password")
                 self.login()
+        self.logger.log_error("Couldn't login user with either password or session")
         raise Exception("Couldn't login user with either password or session")
 
     return wrapper
@@ -82,6 +83,7 @@ class InstagramService(metaclass=Singleton):
                 self.logger.log_info("Couldn't login user using username and password: %s" % e)
 
         if not login_via_pw and not login_via_session:
+            self.logger.log_error("Couldn't login user with either password or session")
             raise Exception("Couldn't login user with either password or session")
 
         self.client.dump_settings(self.session_path)

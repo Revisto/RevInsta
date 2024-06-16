@@ -6,13 +6,12 @@ from instagram_service.instagram_handler_service import InstagramService, ReplyT
 from logger.log import Logger
 
 logger = Logger("InstagramSender")
-instagram_listener = InstagramService(Config)
 
 def callback(ch, method, properties, body):
     logger.log_info("Received a message")
     message = json.loads(body)
     reply_to_message = ReplyToMessage(message["id"], message["client_context"])
-    instagram_listener.reply_in_direct(message["text"], reply_to_message)
+    InstagramService(Config).reply_in_direct(message["text"], reply_to_message)
     logger.log_info(f"Replied to message: {message['text']}")
 
 rabbitmq_service = RabbitMQService(Config)

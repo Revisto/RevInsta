@@ -12,6 +12,6 @@ logger.log_info("Service started")
 
 while True:
     message = instagram_listener.listen()
-    sleep_time = randint(60, 180)
+    sleep_time = randint(0.7 * 60 * 60, 1 * 60 * 60)
     logger.log_info(f"Sleeping for {sleep_time} seconds")
     sleep(sleep_time)

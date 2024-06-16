@@ -2,6 +2,7 @@ from redis import Redis
 import json
 import requests
 import io
+from time import sleep
 
 from message_broker.rabbitmq_service import RabbitMQService
 from config.config import Config
@@ -34,7 +35,10 @@ class TelegramSender:
             message_id = json.loads(req.text)["result"]["message_id"]
             return message_id
         else:
-            logger.log_critical(f"Failed to send text message: {json.loads(req.text)['description']}")
+            if "retry after" in json.loads(req.text)["description"]:
+                sleep(30)
+            else:
+                logger.log_critical(f"Failed to send text message: {json.loads(req.text)['description']}")
             return None
 
     def send_video_message(self, video_url, caption):

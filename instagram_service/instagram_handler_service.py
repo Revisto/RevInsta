@@ -30,18 +30,16 @@ class ReplyToMessage:
 class InstagramService(metaclass=Singleton):
 
     def __init__(self, config):
+        self.config = config
         self.logger = Logger("InstagramService")
         self.client = Client()
         self.client.delay_range = [1, 3]
         self.session_path = "config/session.json"
-        self.INSTAGRAM_USERNAME = config.INSTAGRAM_USERNAME
-        self.INSTAGRAM_PASSWORD = config.INSTAGRAM_PASSWORD
         self.login()
         #self.user_id = self.client.user_id_from_username(config.INSTAGRAM_TARGET_USERNAME)
         #self.thread_id = self.client.direct_thread_by_participants([self.user_id])["thread"]["thread_id"]
         self.thread_id = "340282366841710301244259189720640459822"
         self.redis_client = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT, password=config.REDIS_PASSWORD, db=0)
-        self.rabbitmq_service = RabbitMQService(config)
         self.logger.log_info("Service started")
 
     def login(self):
@@ -56,7 +54,7 @@ class InstagramService(metaclass=Singleton):
         if self.session:
             try:
                 self.client.set_settings(self.session)
-                self.client.login(self.INSTAGRAM_USERNAME, self.INSTAGRAM_PASSWORD)
+                self.client.login(self.config.INSTAGRAM_USERNAME, self.config.INSTAGRAM_PASSWORD)
 
                 # check if session is valid
                 try:
@@ -70,15 +68,15 @@ class InstagramService(metaclass=Singleton):
                     self.client.set_settings({})
                     self.client.set_uuids(old_session["uuids"])
 
-                    self.client.login(self.INSTAGRAM_USERNAME, self.INSTAGRAM_PASSWORD)
+                    self.client.login(self.config.INSTAGRAM_USERNAME, self.config.INSTAGRAM_PASSWORD)
                 login_via_session = True
             except Exception as e:
                 self.logger.log_info("Couldn't login user using session information: %s" % e)
 
         if not login_via_session:
             try:
-                self.logger.log_info("Attempting to login via username and password. username: %s" % self.INSTAGRAM_USERNAME)
-                if self.client.login(self.INSTAGRAM_USERNAME, self.INSTAGRAM_PASSWORD):
+                self.logger.log_info("Attempting to login via username and password. username: %s" % self.config.INSTAGRAM_USERNAME)
+                if self.client.login(self.config.INSTAGRAM_USERNAME, self.config.INSTAGRAM_PASSWORD):
                     login_via_pw = True
             except Exception as e:
                 self.logger.log_info("Couldn't login user using username and password: %s" % e)
@@ -92,6 +90,7 @@ class InstagramService(metaclass=Singleton):
 
     @handle_login_required
     def listen(self):
+        is_rabbitmq_connected = False
         self.logger.log_info("Listening for messages")
         messages = self.client.direct_messages(self.thread_id, amount=10)
         messages.reverse()
@@ -100,6 +99,11 @@ class InstagramService(metaclass=Singleton):
                 continue
             if self.redis_client.get(message.id) is not None:
                 continue
+            if not is_rabbitmq_connected:
+                rabbitmq_service = RabbitMQService(self.config)
+                is_rabbitmq_connected = True
+
+                is_rabbitmq_connected = True
             if message.text is not None:
                 text = message.text
                 clean_message = {
@@ -136,8 +140,10 @@ class InstagramService(metaclass=Singleton):
                 clean_message = {
                     'type': 'unknown'
                 }
-            self.rabbitmq_service.send_message_instagram_to_telegram(json.dumps(clean_message))
+            rabbitmq_service.send_message_instagram_to_telegram(json.dumps(clean_message))
             self.logger.log_info(f"Sent message: {clean_message}")
+        if is_rabbitmq_connected:
+            rabbitmq_service.close_connection()
 
     @handle_login_required
     def reply_in_direct(self, text, reply_to_message):

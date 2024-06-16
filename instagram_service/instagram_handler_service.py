@@ -4,6 +4,7 @@ from instagrapi.exceptions import LoginRequired
 from redis import Redis
 from functools import wraps
 import os
+from time import sleep
 
 from message_broker.rabbitmq_service import RabbitMQService
 from logger.log import Logger
@@ -12,11 +13,15 @@ from utils.singleton import Singleton
 def handle_login_required(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
-        for i in range(2):
+        for i in range(3):
             try:
                 return func(self, *args, **kwargs)
             except LoginRequired:
                 self.logger.log_info("Session is invalid, need to login via username and password")
+                if i == 1:
+                    self.logger.log_error("Couldn't login user with either password or session")
+                    self.logger.log_info("Waiting 3 minutes before trying to login again")
+                    sleep(3*60)
                 self.login()
         self.logger.log_error("Couldn't login user with either password or session")
         raise Exception("Couldn't login user with either password or session")

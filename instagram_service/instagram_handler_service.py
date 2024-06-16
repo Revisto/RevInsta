@@ -5,6 +5,7 @@ from redis import Redis
 from functools import wraps
 import os
 from time import sleep
+import traceback
 
 from message_broker.rabbitmq_service import RabbitMQService
 from logger.log import Logger
@@ -18,6 +19,7 @@ def handle_login_required(func):
                 return func(self, *args, **kwargs)
             except LoginRequired:
                 self.logger.log_info("Session is invalid, need to login via username and password")
+                self.logger.log_error(traceback.format_exc())
                 if i == 1:
                     self.logger.log_error("Couldn't login user with either password or session")
                     self.logger.log_info("Waiting 3 minutes before trying to login again")

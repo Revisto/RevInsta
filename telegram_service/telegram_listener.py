@@ -18,6 +18,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     )
     logger.log_info(f"Start command issued by {user.mention_html()}")
 
+async def listen(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    rabbitmq_service = RabbitMQService(Config)
+    rabbitmq_service.send_message_telegram_to_instagram(json.dumps({"action": "listen"}))
+    rabbitmq_service.close_connection()
+    await update.message.set_reaction("👍")
+    logger.log_info(f"Listen command issued by {update.effective_user.mention_html()}")
+
+
 async def send_direct(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.message.reply_to_message is not None:
         replied_message_id = update.message.reply_to_message.message_id
@@ -25,6 +33,7 @@ async def send_direct(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         if instagram_data is not None:
             instagram_data = json.loads(instagram_data)
             instagram_data["text"] = update.message.text
+            instagram_data["action"] = "reply"
             rabbitmq_service = RabbitMQService(Config)
             rabbitmq_service.send_message_telegram_to_instagram(json.dumps(instagram_data))
             rabbitmq_service.close_connection()
@@ -42,6 +51,7 @@ def main() -> None:
 
     # on different commands - answer in Telegram
     application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("listen", listen))
 
     # on non command i.e message - echo the message on Telegram
     application.add_handler(MessageHandler(filters.TEXT, send_direct))

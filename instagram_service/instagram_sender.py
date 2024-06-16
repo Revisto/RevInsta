@@ -10,9 +10,13 @@ logger = Logger("InstagramSender")
 def callback(ch, method, properties, body):
     logger.log_info("Received a message")
     message = json.loads(body)
-    reply_to_message = ReplyToMessage(message["id"], message["client_context"])
-    InstagramService(Config).reply_in_direct(message["text"], reply_to_message)
-    logger.log_info(f"Replied to message: {message['text']}")
+    if message.get("action") == "reply":
+        reply_to_message = ReplyToMessage(message["id"], message["client_context"])
+        InstagramService(Config).reply_in_direct(message["text"], reply_to_message)
+        logger.log_info(f"Replied to message: {message['text']}")
+    if message.get("action") == "listen":
+        logger.log_info("Listening to messages on command")
+        InstagramService(Config).listen()
 
 rabbitmq_service = RabbitMQService(Config)
 logger.log_info("Service started")

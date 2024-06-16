@@ -83,6 +83,7 @@ class InstagramService:
         self.logger.log_info("Logged in successfully")
 
 
+    @handle_login_required
     def listen(self):
         self.logger.log_info("Listening for messages")
         messages = self.client.direct_messages(self.thread_id, amount=10)
@@ -130,6 +131,7 @@ class InstagramService:
             self.rabbitmq_service.send_message_instagram_to_telegram(json.dumps(clean_message))
             self.logger.log_info(f"Sent message: {clean_message}")
 
+    @handle_login_required
     def reply_in_direct(self, text, reply_to_message):
         self.client.direct_send(text, thread_ids=[self.thread_id], reply_to_message=reply_to_message)
         self.logger.log_info(f"Replied to message: {text}")

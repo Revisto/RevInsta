@@ -5,7 +5,10 @@ import io
 
 from message_broker.rabbitmq_service import RabbitMQService
 from config.config import Config
+from logger.log import Logger
 
+# Create an instance of Logger
+logger = Logger("TelegramSender")
 
 redis_instagram_client = Redis(host=Config.REDIS_HOST, port=Config.REDIS_PORT, password=Config.REDIS_PASSWORD, db=0)
 redis_telegram_client = Redis(host=Config.REDIS_HOST, port=Config.REDIS_PORT, password=Config.REDIS_PASSWORD, db=1)
@@ -23,6 +26,7 @@ class TelegramSender:
         }
         req = requests.post(url, data=data)
         message_id = json.loads(req.text)["result"]["message_id"]
+        logger.log_info(f"Text message sent with ID: {message_id}")
         return message_id
     
     def send_video_message(self, video_url, caption):
@@ -42,12 +46,12 @@ class TelegramSender:
         response = json.loads(req.text)
         if req.status_code == 200:
             message_id = response["result"]["message_id"]
+            logger.log_info(f"Video message sent with ID: {message_id}")
             return message_id
         else:
-            print(f"Failed to send video message: {response['description']}")
+            logger.log_error(f"Failed to send video message: {response['description']}")
             return None
 
-    
     def send_photo_message(self, photo_url, caption):
         url = f"https://api.telegram.org/bot{self.TELEGRAM_BOT_TOKEN}/sendPhoto"
         data = {
@@ -65,9 +69,10 @@ class TelegramSender:
         response = json.loads(req.text)
         if req.status_code == 200:
             message_id = response["result"]["message_id"]
+            logger.log_info(f"Photo message sent with ID: {message_id}")
             return message_id
         else:
-            print(f"Failed to send photo message: {response['description']}")
+            logger.log_error(f"Failed to send photo message: {response['description']}")
             return None
 
 telegram_sender = TelegramSender(Config)
@@ -94,6 +99,8 @@ def callback(ch, method, properties, body):
     
     if message_id is not None:
         redis_telegram_client.set(message_id, json.dumps({"id": message["id"], "client_context": message["client_context"]}))
+        logger.log_info(f"Message ID: {message_id} saved to Redis")
 
 rabbitmq_service = RabbitMQService(Config)
 rabbitmq_service.start_consuming({'instagram_to_telegram': callback})
+logger.log_info("Service started")

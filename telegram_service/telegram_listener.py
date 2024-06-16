@@ -5,7 +5,9 @@ import json
 
 from message_broker.rabbitmq_service import RabbitMQService
 from config.config import Config
+from logger.log import Logger
 
+logger = Logger("TelegramListener")
 redis_telegram_client = Redis(host=Config.REDIS_HOST, port=Config.REDIS_PORT, password=Config.REDIS_PASSWORD, db=1)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -14,6 +16,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     await update.message.reply_html(
         rf"Hi {user.mention_html()}!"
     )
+    logger.log_info(f"Start command issued by {user.mention_html()}")
 
 async def send_direct(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     if update.message.reply_to_message is not None:
@@ -26,11 +29,11 @@ async def send_direct(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             rabbitmq_service.send_message_telegram_to_instagram(json.dumps(instagram_data))
             rabbitmq_service.close_connection()
             await update.message.set_reaction("👍")
+            logger.log_info(f"Message sent: {update.message.text}")
             return
     
     await update.message.set_reaction("👎")
-    
-
+    logger.log_info("Message not sent")
 
 def main() -> None:
     """Start the bot."""
@@ -45,7 +48,7 @@ def main() -> None:
 
     # Run the bot until the user presses Ctrl-C
     application.run_polling(allowed_updates=Update.ALL_TYPES)
-
+    logger.log_info("Service started")
 
 if __name__ == "__main__":
     main()

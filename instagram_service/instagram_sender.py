@@ -1,16 +1,20 @@
-
 import json
 
 from config.config import Config
 from message_broker.rabbitmq_service import RabbitMQService
 from instagram_service.instagram_handler_service import InstagramService, ReplyToMessage
+from logger.log import Logger
 
+logger = Logger("InstagramSender")
 instagram_listener = InstagramService(Config)
 
 def callback(ch, method, properties, body):
+    logger.log_info("Received a message")
     message = json.loads(body)
     reply_to_message = ReplyToMessage(message["id"], message["client_context"])
     instagram_listener.reply_in_direct(message["text"], reply_to_message)
+    logger.log_info(f"Replied to message: {message['text']}")
 
 rabbitmq_service = RabbitMQService(Config)
+logger.log_info("Service started")
 rabbitmq_service.start_consuming({'telegram_to_instagram': callback})

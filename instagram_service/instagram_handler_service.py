@@ -44,9 +44,8 @@ class InstagramService(metaclass=Singleton):
         self.client.delay_range = [1, 3]
         self.session_path = "config/session.json"
         self.login()
-        #self.user_id = self.client.user_id_from_username(config.INSTAGRAM_TARGET_USERNAME)
-        #self.thread_id = self.client.direct_thread_by_participants([self.user_id])["thread"]["thread_id"]
-        self.thread_id = "340282366841710301244259189720640459822"
+        self.user_id = self.client.user_id_from_username(config.INSTAGRAM_TARGET_USERNAME)
+        self.thread_id = self.client.direct_thread_by_participants([self.user_id])["thread"]["thread_id"]
         self.redis_client = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT, password=config.REDIS_PASSWORD, db=0)
         self.logger.log_info("Service started")
 
@@ -101,7 +100,7 @@ class InstagramService(metaclass=Singleton):
     def listen(self):
         is_rabbitmq_connected = False
         self.logger.log_info("Listening for messages")
-        messages = self.client.direct_messages(self.thread_id, amount=10)
+        messages = self.client.direct_messages(self.thread_id, amount=20)
         messages.reverse()
         for message in messages:
             if int(message.user_id) == int(self.client.user_id):

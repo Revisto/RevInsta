@@ -9,6 +9,7 @@ services:
       - rabbitmq
     volumes:
       - .:/app
+      - ./config:/app/config
 
   redis:
     image: redis:latest
@@ -16,6 +17,8 @@ services:
     environment:
       REDIS_PORT: ${REDIS_PORT}
       REDIS_PASSWORD: ${REDIS_PASSWORD}
+    volumes:
+      - ./redis-data:/data
 
   rabbitmq:
     image: rabbitmq:3-management

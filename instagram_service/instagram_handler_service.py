@@ -11,12 +11,14 @@ from logger.log import Logger
 def handle_login_required(func):
     @wraps(func)
     def wrapper(self, *args, **kwargs):
-        while True:
+        for i in range(2):
             try:
                 return func(self, *args, **kwargs)
             except LoginRequired:
                 self.logger.log_info("Session is invalid, need to login via username and password")
                 self.login()
+        raise Exception("Couldn't login user with either password or session")
+
     return wrapper
 
 class ReplyToMessage:
@@ -48,7 +50,7 @@ class InstagramService:
 
         if self.session:
             try:
-                self.client.set_settings(self.client)
+                self.client.set_settings(self.session)
                 self.client.login(self.INSTAGRAM_USERNAME, self.INSTAGRAM_PASSWORD)
 
                 # check if session is valid

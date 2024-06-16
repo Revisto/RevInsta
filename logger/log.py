@@ -1,7 +1,9 @@
 import sys
 from loguru import logger
 
-class Logger:
+from utils.singleton import Singleton
+
+class Logger(metaclass=Singleton):
     def __init__(self, service):
         # Configure the logger
         logger.add(sys.stderr, format="{time:YYYY-MM-DD HH:mm:ss} - {level} - {extra[service]} - {message}", level="INFO")

@@ -6,7 +6,7 @@ from functools import wraps
 
 from message_broker.rabbitmq_service import RabbitMQService
 from logger.log import Logger
-
+from utils.singleton import Singleton
 
 def handle_login_required(func):
     @wraps(func)
@@ -26,7 +26,8 @@ class ReplyToMessage:
         self.id = message_id
         self.client_context = client_context
 
-class InstagramService:
+class InstagramService(metaclass=Singleton):
+
     def __init__(self, config):
         self.logger = Logger("InstagramService")
         self.client = Client()

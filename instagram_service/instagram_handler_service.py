@@ -94,6 +94,7 @@ class InstagramService(metaclass=Singleton):
     def listen(self):
         self.logger.log_info("Listening for messages")
         messages = self.client.direct_messages(self.thread_id, amount=10)
+        messages.reverse()
         for message in messages:
             if int(message.user_id) == int(self.client.user_id):
                 continue

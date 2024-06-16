@@ -77,7 +77,7 @@ class TelegramSender:
 
 telegram_sender = TelegramSender(Config)
 
-def callback(ch, method, properties, body):
+def instagram_to_telegram_callback(ch, method, properties, body):
     message = json.loads(body)
     message_id = None
     if message.get("id") is not None:
@@ -101,6 +101,11 @@ def callback(ch, method, properties, body):
         redis_telegram_client.set(message_id, json.dumps({"id": message["id"], "client_context": message["client_context"]}))
         logger.log_info(f"Message ID: {message_id} saved to Redis")
 
+def log_in_telegram_callback(ch, method, properties, body):
+    message = json.loads(body)
+    telegram_sender.send_text_message(message)
+
 rabbitmq_service = RabbitMQService(Config)
-rabbitmq_service.start_consuming({'instagram_to_telegram': callback})
+rabbitmq_service.start_consuming({'instagram_to_telegram': instagram_to_telegram_callback})
+rabbitmq_service.start_consuming({'logs': log_in_telegram_callback})
 logger.log_info("Service started")

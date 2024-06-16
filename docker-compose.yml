@@ -19,6 +19,7 @@ services:
       REDIS_PASSWORD: ${REDIS_PASSWORD}
     volumes:
       - ./redis-data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
 
   rabbitmq:
     image: rabbitmq:3-management

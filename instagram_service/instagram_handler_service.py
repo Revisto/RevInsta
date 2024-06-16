@@ -3,6 +3,7 @@ from instagrapi import Client
 from instagrapi.exceptions import LoginRequired
 from redis import Redis
 from functools import wraps
+import os
 
 from message_broker.rabbitmq_service import RabbitMQService
 from logger.log import Logger
@@ -44,8 +45,11 @@ class InstagramService(metaclass=Singleton):
         self.logger.log_info("Service started")
 
     def login(self):
-        self.session = self.client.load_settings(self.session_path)
-
+        if os.path.exists(self.session_path):
+            self.session = self.client.load_settings(self.session_path)
+        else:
+            self.session = None
+            
         login_via_session = False
         login_via_pw = False
 

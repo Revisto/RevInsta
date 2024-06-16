@@ -103,9 +103,9 @@ class InstagramService(metaclass=Singleton):
                 continue
             if not is_rabbitmq_connected:
                 rabbitmq_service = RabbitMQService(self.config)
+                self.logger.log_info("Connected to RabbitMQ to send messages to Telegram")
                 is_rabbitmq_connected = True
 
-                is_rabbitmq_connected = True
             if message.text is not None:
                 text = message.text
                 clean_message = {
@@ -142,10 +142,13 @@ class InstagramService(metaclass=Singleton):
                 clean_message = {
                     'type': 'unknown'
                 }
+
             rabbitmq_service.send_message_instagram_to_telegram(json.dumps(clean_message))
             self.logger.log_info(f"Sent message: {clean_message}")
+
         if is_rabbitmq_connected:
             rabbitmq_service.close_connection()
+            self.logger.log_info("Disconnected from RabbitMQ")
 
     @handle_login_required
     def reply_in_direct(self, text, reply_to_message):

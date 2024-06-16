@@ -1,5 +1,6 @@
 import os
 import subprocess
+from time import sleep
 
 python_files = ["instagram_service/instagram_listener.py", "instagram_service/instagram_sender.py", "telegram_service/telegram_sender.py", "telegram_service/telegram_listener.py"]
 
@@ -21,4 +22,5 @@ def run_all_main_files():
             process.wait()
 
 if __name__ == "__main__":
+    sleep(15) # wait for RabbitMQ to start
     run_all_main_files()

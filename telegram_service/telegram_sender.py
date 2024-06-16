@@ -23,13 +23,19 @@ class TelegramSender:
         self.TELEGRAM_BOT_TOKEN = config.TELEGRAM_BOT_TOKEN
         self.CHAT_ID = config.TELEGRAM_CHAT_ID
 
-    def send_text_message(self, text):
+    def send_text_message(self, text, chat_id=None):
+        if chat_id is None:
+            chat_id = self.CHAT_ID
+
         url = f"https://api.telegram.org/bot{self.TELEGRAM_BOT_TOKEN}/sendMessage"
         data = {"chat_id": self.CHAT_ID, "text": text}
         req = requests.post(url, data=data)
-        message_id = json.loads(req.text)["result"]["message_id"]
-        logger.log_info(f"Text message sent with ID: {message_id}")
-        return message_id
+        if req.status_code == 200:
+            message_id = json.loads(req.text)["result"]["message_id"]
+            return message_id
+        else:
+            logger.log_critical(f"Failed to send text message: {json.loads(req.text)['description']}")
+            return None
 
     def send_video_message(self, video_url, caption):
         url = f"https://api.telegram.org/bot{self.TELEGRAM_BOT_TOKEN}/sendVideo"
@@ -42,10 +48,9 @@ class TelegramSender:
         response = json.loads(req.text)
         if req.status_code == 200:
             message_id = response["result"]["message_id"]
-            logger.log_info(f"Video message sent with ID: {message_id}")
             return message_id
         else:
-            logger.log_error(f"Failed to send video message: {response['description']}")
+            logger.log_critical(f"Failed to send video message: {response['description']}")
             return None
 
     def send_photo_message(self, photo_url, caption):
@@ -59,10 +64,9 @@ class TelegramSender:
         response = json.loads(req.text)
         if req.status_code == 200:
             message_id = response["result"]["message_id"]
-            logger.log_info(f"Photo message sent with ID: {message_id}")
             return message_id
         else:
-            logger.log_error(f"Failed to send photo message: {response['description']}")
+            logger.log_critical(f"Failed to send photo message: {response['description']}")
             return None
 
 
@@ -78,21 +82,25 @@ def instagram_to_telegram_callback(ch, method, properties, body):
 
     if message.get("type") == "text":
         message_id = telegram_sender.send_text_message(message["text"])
+        logger.log_info(f"Text message sent with ID: {message_id}")
 
     if message.get("type") == "reel":
         caption = f'{message["caption"]}\n\n<a href="{message["link"]}">Link</a>'
         message_id = telegram_sender.send_video_message(
             message["download_link"], caption
         )
+        logger.log_info(f"Reel message sent with ID: {message_id}")
 
     if message.get("type") == "post":
         caption = f'{message["caption"]}\n\n<a href="{message["link"]}">Link</a>'
         message_id = telegram_sender.send_photo_message(
             message["download_link"], caption
         )
+        logger.log_info(f"Post message sent with ID: {message_id}")
 
     if message.get("type") == "unknown":
         telegram_sender.send_text_message("Unknown message type")
+        logger.log_info("Unknown message type sent to Telegram")
 
     if message_id is not None:
         redis_telegram_client.set(
@@ -105,8 +113,8 @@ def instagram_to_telegram_callback(ch, method, properties, body):
 
 
 def log_in_telegram_callback(ch, method, properties, body):
-    message = json.loads(body)
-    telegram_sender.send_text_message(message)
+    message = body.decode("utf-8")
+    telegram_sender.send_text_message(message, Config.TELEGRAM_LOG_CHAT_ID)
 
 
 rabbitmq_service = RabbitMQService(Config)

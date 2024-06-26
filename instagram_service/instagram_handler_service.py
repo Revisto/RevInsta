@@ -45,6 +45,7 @@ class InstagramService(metaclass=Singleton):
         self.session_path = "config/session.json"
         self.thread_id_path = "config/thread_id.txt"
         self.login()
+        self.INSTAGRAM_TARGET_USERNAME = config.INSTAGRAM_TARGET_USERNAME
         self.thread_id = self.load_thread_id()
         if not self.thread_id:
             self.thread_id = self.fetch_and_save_thread_id()
@@ -62,6 +63,7 @@ class InstagramService(metaclass=Singleton):
             return None
 
     def fetch_and_save_thread_id(self):
+        self.user_id = self.client.user_id_from_username(self.INSTAGRAM_TARGET_USERNAME)
         thread_id = self.client.direct_thread_by_participants([self.user_id])["thread"]["thread_id"]
         with open(self.thread_id_path, 'w') as file:
             file.write(thread_id)

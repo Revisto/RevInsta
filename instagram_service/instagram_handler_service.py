@@ -43,12 +43,31 @@ class InstagramService(metaclass=Singleton):
         self.client = Client()
         self.client.delay_range = [1, 3]
         self.session_path = "config/session.json"
+        self.thread_id_path = "config/thread_id.txt"
         self.login()
-        self.user_id = self.client.user_id_from_username(config.INSTAGRAM_TARGET_USERNAME)
-        self.thread_id = self.client.direct_thread_by_participants([self.user_id])["thread"]["thread_id"]
+        self.thread_id = self.load_thread_id()
+        if not self.thread_id:
+            self.thread_id = self.fetch_and_save_thread_id()
         self.redis_client = Redis(host=config.REDIS_HOST, port=config.REDIS_PORT, password=config.REDIS_PASSWORD, db=0)
         self.logger.log_info("Service started")
 
+    def load_thread_id(self):
+        try:
+            with open(self.thread_id_path, 'r') as file:
+                thread_id = file.read().strip()
+                self.logger.log_info("Loaded thread_id from file.")
+                return thread_id
+        except FileNotFoundError:
+            self.logger.log_info("Thread_id file not found. Will fetch from Instagram.")
+            return None
+
+    def fetch_and_save_thread_id(self):
+        thread_id = self.client.direct_thread_by_participants([self.user_id])["thread"]["thread_id"]
+        with open(self.thread_id_path, 'w') as file:
+            file.write(thread_id)
+        self.logger.log_info("Fetched and saved thread_id to file.")
+        return thread_id
+    
     def login(self):
         if os.path.exists(self.session_path):
             self.session = self.client.load_settings(self.session_path)
